@@ -110,12 +110,12 @@ class ElementProp:
     - _density, true density
     """
 
-    def __init__(self):
+    def __init__(self, density: float = 1000.0):
         """ """
-        self._density = None
+        self._density = density
 
-    def density(self, value: float = 0.0) -> float:
-        self._density = value
+    def density(self):
+        return self._density
 
 
 ## ======== ##
@@ -210,7 +210,8 @@ class SolidProp(ElementProp, ElementComp):
     def __init__(
         self,
         ea_mass=_std_ea_dict,
+        density: float = 1000,
     ):
         # -- INIT BASE CLASS
-        ElementProp.__init__(self)
+        ElementProp.__init__(self, density=density)
         ElementComp.__init__(self, ea_mass=ea_mass)
