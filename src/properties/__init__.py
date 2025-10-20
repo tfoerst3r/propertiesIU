@@ -1,4 +1,4 @@
-from src.properties.utils import (
+from src.properties.classes import (
     GasProp,
     LiquidProp,
     SolidProp,
