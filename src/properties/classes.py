@@ -53,27 +53,12 @@ class ElementComp:
 
     @property
     def normalized_ea_mass(self):
+        """ Normalized mass compsition """
         return normalize_dict(self._ea_mass)
-
-    @normalized_ea_mass.setter
-    def normalized_ea_mass(self, dict_ea_mass: dict):
-        """Setter: Elemental Analysis, Mass based"""
-
-        # -- Check for supported input
-        unallowed_keys = set(dict_ea_mass) - _std_ea_list
-        if unallowed_keys:
-            raise ValueError(
-                f"Es wurden unerlaubter Input verwendet: {unallowed_keys}."
-            )  # ------#
-
-        for i, value in enumerate(_std_ea_list):
-            if value not in dict_ea_mass.keys():
-                self._ea_mass[value] = 0
-            else:
-                self._ea_mass[value] = dict_ea_mass[value]
 
     @property
     def normalized_ea_molar(self):
+        """ Normalized molar compsition """
         ea_mass = self.normalized_ea_mass
 
         # init
@@ -103,11 +88,10 @@ class ElementComp:
 
 class ElementProp:
     """Base class for all properties
-    **Introduction**
 
     General properties are:
-
-    - _density, true density
+    Attributes:
+        _density: true density, kg/m3
     """
 
     def __init__(self, density: float = 1000.0):
@@ -144,53 +128,63 @@ class GasProp(ElementProp, ElementComp):
             self._ea_mass[value] = self._gas.elemental_mass_fraction(value)
 
         # -- INIT BASE CLASS
-        ElementProp.__init__(self)
         ElementComp.__init__(self, ea_mass=self._ea_mass)
 
     def density(
         self,
-        T: float = _std_cond["temp"],
         p: float = _std_cond["pressure"],
+        T: float = _std_cond["temp"],
     ) -> float:
+        """Density function for gases
+
+        Args:
+            p: pressure, Pa
+            T: temperature, K
+        """
         self._gas.TPY = T, p, self._species
         return self._gas.density
 
 
 class LiquidProp(ElementProp, ElementComp):
     """Liquid Property class
+
     Attributes:
-        ua: ultimate analysis kg/kg
-        mw: molar weight
+        ea_mass: elementar analysis, kg/kg
+        crit_values: critical density, kg/m3, critical temperature, K
+        density_coef: four coefficents (A,B,C,D), see VDI Wärmeatlas
     """
 
     def __init__(
         self,
-        ea_mass={"O": 0.888093, "H": 0.111907},  # H2O
+        ea={"O": 0.888093, "H": 0.111907},  # H2O
         crit_values={"rho_crit": 322.0, "T_crit": 647.10},  # H2O
         density_coef=[1094.0233, -1813.2295, 3863.9557, -2479.8130],  # H2O
     ):
         # -- INIT BASE CLASS
-        ElementProp.__init__(self)
-        ElementComp.__init__(self, ea_mass=ea_mass)
+        ElementComp.__init__(self, ea_mass=ea)
         self.crit_values: dict = crit_values
         self.density_coef: list = density_coef
 
     def density(
         self,
-        t: float = 293.15,
+        T: float = 293.15,
     ) -> float:
+        """Density of common liquids
+
+        Args:
+            T: temperature, K
+        """
         rho0 = self.crit_values["rho_crit"]
-        t0 = self.crit_values["T_crit"]
+        T0 = self.crit_values["T_crit"]
 
         den = rho0 + (
-            self.density_coef[0] * (1 - t / t0) ** (0.35)
-            + self.density_coef[1] * (1 - t / t0) ** (2 / 3)
-            + self.density_coef[2] * (1 - t / t0) ** (1)
-            + self.density_coef[3] * (1 - t / t0) ** (4 / 3)
+              self.density_coef[0] * (1 - T / T0) ** (0.35)
+            + self.density_coef[1] * (1 - T / T0) ** (2 / 3)
+            + self.density_coef[2] * (1 - T / T0) ** (1)
+            + self.density_coef[3] * (1 - T / T0) ** (4 / 3)
         )
 
         return den
-
 
 ## ------- ##
 ## ------- ##
@@ -198,20 +192,18 @@ class LiquidProp(ElementProp, ElementComp):
 
 class SolidProp(ElementProp, ElementComp):
     """Solid Base Property class for Hydrocarbons
-    Containing properties:
-
-     - Ultimate Analysis [CHON], weight fraction
-     - Proximate Analysis [FC Vol Ash], weight fraction daf
-     - Higher Heating Value
-     - Porosity
-
+    
+    Attributes:
+        ea: Elementar Analysis [CHON], kg/kg
+        density: constant density, kg/m3
     """
 
     def __init__(
         self,
-        ea_mass=_std_ea_dict,
+        ea=_std_ea_dict,
         density: float = 1000,
     ):
         # -- INIT BASE CLASS
         ElementProp.__init__(self, density=density)
-        ElementComp.__init__(self, ea_mass=ea_mass)
+        ElementComp.__init__(self, ea_mass=ea)
+

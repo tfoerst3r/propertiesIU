@@ -1,5 +1,6 @@
 # vim tempory files
 *.sw?
+jabref.xml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
